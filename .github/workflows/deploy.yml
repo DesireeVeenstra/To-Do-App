@@ -20,7 +20,7 @@ jobs:
         run: npm run lint
 
       - name: Print Environment Variable
-        run: echo "App Name: $APP_NAME"
+        run: echo "App Name: To-Do-App"
 
       - name: Install Dependencies (if any)
         run: |
