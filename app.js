@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBUH1UBpxBHmemq6zUWD7YgsrRst9ehSuc",
@@ -15,21 +15,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Service Worker Registration
-const sw = new URL('service-worker.js', import.meta.url);
-if ('serviceWorker' in navigator) {
-    const s = navigator.serviceWorker;
-    s.register(sw.href, {
-        scope: '/To-Do-App/'
-    })
-    .then(_ => console.log('Service Worker Registered for scope:', sw.href, 'with', import.meta.url))
-    .catch(err => console.error('Service Worker Error:', err));
+// Register Service Worker
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+        .register(new URL("service-worker.js", import.meta.url), { scope: "./" })
+        .then(() => console.log("Service Worker Registered"))
+        .catch((err) => console.error("Service Worker Error:", err));
 }
 
 // DOM Elements
-const taskInput = document.getElementById('taskInput');
-const addTaskBtn = document.getElementById('addTaskBtn');
-const taskList = document.getElementById('taskList');
+const taskInput = document.getElementById("taskInput");
+const addTaskBtn = document.getElementById("addTaskBtn");
+const taskList = document.getElementById("taskList");
 
 // Function to sanitize user input
 function sanitizeInput(input) {
@@ -41,25 +38,28 @@ function sanitizeInput(input) {
 // Function to add task to Firestore
 async function addTaskToFirestore(taskText) {
     try {
-        await addDoc(collection(db, "todos"), {
-            text: taskText, 
-            completed: false
-        });
+        await addDoc(collection(db, "todos"), { text: taskText, completed: false });
         renderTasks(); // Refresh task list after adding
     } catch (error) {
         console.error("Error adding task:", error);
     }
 }
 
+// Function to delete task from Firestore
+async function deleteTaskFromFirestore(taskId) {
+    try {
+        await deleteDoc(doc(db, "todos", taskId));
+        renderTasks(); // Refresh task list after deletion
+    } catch (error) {
+        console.error("Error deleting task:", error);
+    }
+}
+
 // Function to get tasks from Firestore
 async function getTasksFromFirestore() {
     try {
-        const data = await getDocs(collection(db, "todos"));
-        let tasks = [];
-        data.forEach((doc) => {
-            tasks.push({ id: doc.id, ...doc.data() }); 
-        });
-        return tasks;
+        const querySnapshot = await getDocs(collection(db, "todos"));
+        return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
         console.error("Error retrieving tasks:", error);
         return [];
@@ -72,30 +72,29 @@ async function renderTasks() {
     taskList.innerHTML = "";
 
     tasks.forEach((task) => {
-        if (!task.completed) {
-            const taskItem = document.createElement("li");
-            taskItem.id = task.id;
-            taskItem.textContent = task.text;
-            taskList.appendChild(taskItem);
-        }
+        const taskItem = document.createElement("li");
+        taskItem.id = task.id;
+        taskItem.textContent = task.text;
+
+        // Add delete button
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "❌";
+        deleteBtn.classList.add("delete-btn");
+        deleteBtn.addEventListener("click", async () => {
+            await deleteTaskFromFirestore(task.id);
+        });
+
+        taskItem.appendChild(deleteBtn);
+        taskList.appendChild(taskItem);
     });
 }
 
-// Add Task Event Listener
-addTaskBtn.addEventListener('click', async () => {
+// Event Listener to Add Task
+addTaskBtn.addEventListener("click", async () => {
     const taskText = sanitizeInput(taskInput.value.trim());
-
     if (taskText) {
         await addTaskToFirestore(taskText);
         taskInput.value = "";
-    }
-});
-
-// Remove Task on Click (Currently only removes from UI, not Firestore)
-taskList.addEventListener('click', async (e) => {
-    if (e.target.tagName === 'LI') {
-        e.target.remove();
-        // Here, you might want to delete the task from Firestore as well
     }
 });
 
