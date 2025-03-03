@@ -8,7 +8,7 @@ export default [
   },
   {
     rules: {
-      "no-unused-vars": "warn", // ✅ Fix: Keep rules inside object
+      "no-unused-vars": "warn",
       "no-undef": "warn"
     },
     files: ["*.js"]
@@ -16,5 +16,8 @@ export default [
   {
     languageOptions: { globals: globals.browser },
   },
-  pluginJs.configs.recommended
+  pluginJs.configs.recommended,
+  {
+    ignores: ["docs/**"]  // ✅ Exclude build files from linting
+  }
 ];
