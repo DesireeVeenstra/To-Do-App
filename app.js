@@ -19,7 +19,7 @@ const db = getFirestore(app);
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker
         .register(new URL("service-worker.js", import.meta.url), { scope: "./" })
-        .then(() => console.log("Service Worker Registered"))
+        .then(() => console.warn("Service Worker Registered"))  // ✅ Use warn instead of log
         .catch((err) => console.error("Service Worker Error:", err));
 }
 
@@ -39,7 +39,7 @@ function sanitizeInput(input) {
 async function addTaskToFirestore(taskText) {
     try {
         await addDoc(collection(db, "todos"), { text: taskText, completed: false });
-        renderTasks(); // Refresh task list after adding
+        renderTasks();
     } catch (error) {
         console.error("Error adding task:", error);
     }
@@ -49,7 +49,7 @@ async function addTaskToFirestore(taskText) {
 async function deleteTaskFromFirestore(taskId) {
     try {
         await deleteDoc(doc(db, "todos", taskId));
-        renderTasks(); // Refresh task list after deletion
+        renderTasks();
     } catch (error) {
         console.error("Error deleting task:", error);
     }
